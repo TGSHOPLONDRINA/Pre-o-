@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -39,7 +39,6 @@
       </thead>
       <tbody></tbody>
     </table>
-    <h3>Total: R$ <span id="total">0,00</span></h3>
     <button onclick="enviarWhatsApp()">📲 Enviar para WhatsApp</button>
   </div>
 
@@ -53,10 +52,8 @@
     function renderizarTabela() {
       const tbody = document.querySelector("#tabela tbody");
       tbody.innerHTML = "";
-      let total = 0;
       produtos.forEach((p, i) => {
         const v = parseFloat(p.valor) || 0;
-        total += v;
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${p.nome}</td>
@@ -65,7 +62,6 @@
         `;
         tbody.appendChild(tr);
       });
-      document.getElementById("total").textContent = formatarBRL(total);
     }
 
     function adicionarProduto() {
@@ -75,7 +71,7 @@
         alert("Preencha o nome e o valor!");
         return;
       }
-      const valor = valorRaw.replace(',', '.'); // aceita vírgula
+      const valor = valorRaw.replace(',', '.'); 
       produtos.push({ nome, valor });
       localStorage.setItem("produtos_valor", JSON.stringify(produtos));
       document.getElementById("nome").value = "";
@@ -94,18 +90,27 @@
         alert("A lista está vazia!");
         return;
       }
+
       let msg = "💰 Lista de produtos:\n\n";
-      let total = 0;
       produtos.forEach((p, i) => {
         const v = parseFloat(p.valor) || 0;
-        msg += `${i+1}️⃣ ${p.nome} - R$ ${formatarBRL(v)}\n`;
-        total += v;
+        msg += `- ${p.nome} - R$ ${formatarBRL(v)}\n`;
       });
-      msg += `\n📊 Total: R$ ${formatarBRL(total)}`;
 
-      const telefone = "5511988553006"; // número fixo solicitado
-      const url = "https://wa.me/" + telefone + "?text=" + encodeURIComponent(msg);
-      window.open(url, "_blank");
+      // CallMeBot API
+      const telefone = "556296094975"; // seu número
+      const chaveAPI = "2198964"; // sua chave do CallMeBot
+      const url = `https://api.callmebot.com/whatsapp.php?phone=${telefone}&text=${encodeURIComponent(msg)}&apikey=${chaveAPI}`;
+
+      fetch(url)
+        .then(res => res.text())
+        .then(response => {
+          alert("Mensagem enviada com sucesso!");
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Erro ao enviar a mensagem.");
+        });
     }
 
     renderizarTabela();
