@@ -1,0 +1,114 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Controle de Vendas - Casa de Ração</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f3f4f6; margin:20px; color:#111; }
+    h1 { text-align:center; }
+    .box { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.2); margin-bottom:20px; }
+    input, button { padding:10px; margin:5px 0; border-radius:8px; border:1px solid #ccc; width:100%; }
+    button { background:#16a34a; color:#fff; cursor:pointer; border:none; font-weight:bold; }
+    button:hover { background:#15803d; }
+    table { width:100%; border-collapse:collapse; margin-top:15px; }
+    th, td { padding:8px; border-bottom:1px solid #ddd; text-align:left; }
+  </style>
+</head>
+<body>
+  <h1>💰 Controle de Vendas</h1>
+
+  <div class="box">
+    <label>Nome do Produto:</label>
+    <input type="text" id="nome" placeholder="Ex: Ração Golden 15kg">
+
+    <label>Valor (R$):</label>
+    <input type="number" id="valor" placeholder="Ex: 120.00" step="0.01" inputmode="decimal">
+
+    <button onclick="adicionarProduto()">➕ Adicionar à Lista</button>
+  </div>
+
+  <div class="box">
+    <h2>📝 Lista de Produtos</h2>
+    <table id="tabela">
+      <thead>
+        <tr>
+          <th>Produto</th>
+          <th>Valor (R$)</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <h3>Total: R$ <span id="total">0,00</span></h3>
+    <button onclick="enviarWhatsApp()">📲 Enviar para WhatsApp</button>
+  </div>
+
+  <script>
+    let produtos = JSON.parse(localStorage.getItem("produtos_valor")) || [];
+
+    function formatarBRL(n){
+      return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function renderizarTabela() {
+      const tbody = document.querySelector("#tabela tbody");
+      tbody.innerHTML = "";
+      let total = 0;
+      produtos.forEach((p, i) => {
+        const v = parseFloat(p.valor) || 0;
+        total += v;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.nome}</td>
+          <td>R$ ${formatarBRL(v)}</td>
+          <td><button onclick="removerProduto(${i})">❌ Remover</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById("total").textContent = formatarBRL(total);
+    }
+
+    function adicionarProduto() {
+      const nome = document.getElementById("nome").value.trim();
+      const valorRaw = document.getElementById("valor").value.trim();
+      if (!nome || !valorRaw) {
+        alert("Preencha o nome e o valor!");
+        return;
+      }
+      const valor = valorRaw.replace(',', '.'); // aceita vírgula
+      produtos.push({ nome, valor });
+      localStorage.setItem("produtos_valor", JSON.stringify(produtos));
+      document.getElementById("nome").value = "";
+      document.getElementById("valor").value = "";
+      renderizarTabela();
+    }
+
+    function removerProduto(i) {
+      produtos.splice(i,1);
+      localStorage.setItem("produtos_valor", JSON.stringify(produtos));
+      renderizarTabela();
+    }
+
+    function enviarWhatsApp() {
+      if (produtos.length === 0) {
+        alert("A lista está vazia!");
+        return;
+      }
+      let msg = "💰 Lista de produtos:\n\n";
+      let total = 0;
+      produtos.forEach((p, i) => {
+        const v = parseFloat(p.valor) || 0;
+        msg += `${i+1}️⃣ ${p.nome} - R$ ${formatarBRL(v)}\n`;
+        total += v;
+      });
+      msg += `\n📊 Total: R$ ${formatarBRL(total)}`;
+
+      const telefone = "5511988553006"; // número fixo solicitado
+      const url = "https://wa.me/" + telefone + "?text=" + encodeURIComponent(msg);
+      window.open(url, "_blank");
+    }
+
+    renderizarTabela();
+  </script>
+</body>
+</html>
