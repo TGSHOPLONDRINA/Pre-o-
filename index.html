@@ -1,119 +1,314 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Controle de Vendas - Casa de Ração</title>
-  <style>
-    body { font-family: Arial, sans-serif; background:#f3f4f6; margin:20px; color:#111; }
-    h1 { text-align:center; }
-    .box { background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.2); margin-bottom:20px; }
-    input, button { padding:10px; margin:5px 0; border-radius:8px; border:1px solid #ccc; width:100%; }
-    button { background:#16a34a; color:#fff; cursor:pointer; border:none; font-weight:bold; }
-    button:hover { background:#15803d; }
-    table { width:100%; border-collapse:collapse; margin-top:15px; }
-    th, td { padding:8px; border-bottom:1px solid #ddd; text-align:left; }
-  </style>
-</head>
-<body>
-  <h1>💰 Controle de Vendas</h1>
+import React, { useMemo, useReducer, useState, useEffect } from "react"; import { motion, AnimatePresence } from "framer-motion"; import { ShoppingCart, Search, Star, ChevronDown, Trash2, X, BadgePercent, Truck, ShieldCheck, CreditCard, Check, Filter, Heart, } from "lucide-react";
 
-  <div class="box">
-    <label>Nome do Produto:</label>
-    <input type="text" id="nome" placeholder="Ex: Ração Golden 15kg">
+// shadcn/ui components import { Button } from "@/components/ui/button"; import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; import { Badge } from "@/components/ui/badge"; import { Input } from "@/components/ui/input"; import { Label } from "@/components/ui/label"; import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, } from "@/components/ui/dialog"; import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"; import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, } from "@/components/ui/select";
 
-    <label>Valor (R$):</label>
-    <input type="number" id="valor" placeholder="Ex: 120.00" step="0.01" inputmode="decimal">
+// -------------------------- // Mock data (substitua por API/BD depois) // -------------------------- const PRODUCTS = [ { id: "p1", name: "Tênis Runner Pro", desc: "Conforto e performance para o dia a dia.", price: 349.9, rating: 4.6, category: "Calçados", stock: 12, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200&auto=format&fit=crop", tags: ["novo", "frete grátis"], }, { id: "p2", name: "Headphone Studio X", desc: "Som imersivo com cancelamento de ruído.", price: 599.0, rating: 4.8, category: "Eletrônicos", stock: 8, image: "https://images.unsplash.com/photo-1518442253053-3e7c381a3a8a?q=80&w=1200&auto=format&fit=crop", tags: ["destaque"], }, { id: "p3", name: "Mochila Travel 35L", desc: "Resistente à água, ideal para viagens.", price: 279.5, rating: 4.4, category: "Acessórios", stock: 20, image: "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=80&w=1200&auto=format&fit=crop", tags: ["promo"], }, { id: "p4", name: "Relógio SmartFit", desc: "Monitoramento de saúde e notificações.", price: 399.9, rating: 4.2, category: "Eletrônicos", stock: 15, image: "https://images.unsplash.com/photo-1518442253035-04e0b6a54d3f?q=80&w=1200&auto=format&fit=crop", tags: ["novo"], }, { id: "p5", name: "Camisa Tech Dry", desc: "Tecido respirável, secagem rápida.", price: 129.9, rating: 4.1, category: "Vestuário", stock: 30, image: "https://images.unsplash.com/photo-1520975922215-230a5b49f743?q=80&w=1200&auto=format&fit=crop", tags: ["essencial"], }, { id: "p6", name: "Garrafa Térmica 1L", desc: "Mantém a temperatura por 12h.", price: 89.9, rating: 4.7, category: "Acessórios", stock: 40, image: "https://images.unsplash.com/photo-1533674689012-136b487cd4d5?q=80&w=1200&auto=format&fit=crop", tags: ["frete grátis"], }, ];
 
-    <button onclick="adicionarProduto()">➕ Adicionar à Lista</button>
-  </div>
+// -------------------------- // Utilitários // -------------------------- const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-  <div class="box">
-    <h2>📝 Lista de Produtos</h2>
-    <table id="tabela">
-      <thead>
-        <tr>
-          <th>Produto</th>
-          <th>Valor (R$)</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-    <button onclick="enviarWhatsApp()">📲 Enviar para WhatsApp</button>
-  </div>
+function classNames(...xs) { return xs.filter(Boolean).join(" "); }
 
-  <script>
-    let produtos = JSON.parse(localStorage.getItem("produtos_valor")) || [];
+// -------------------------- // Carrinho (Reducer) // -------------------------- function cartReducer(state, action) { switch (action.type) { case "ADD": { const { product, qty = 1 } = action; const exists = state.items.find((i) => i.id === product.id); let items; if (exists) { items = state.items.map((i) => (i.id === product.id ? { ...i, qty: Math.min(i.qty + qty, product.stock) } : i)); } else { items = [...state.items, { ...product, qty: Math.min(qty, product.stock) }]; } return { ...state, items }; } case "REMOVE": { return { ...state, items: state.items.filter((i) => i.id !== action.id) }; } case "SET_QTY": { const { id, qty, stock } = action; return { ...state, items: state.items.map((i) => (i.id === id ? { ...i, qty: Math.max(1, Math.min(qty, stock)) } : i)), }; } case "CLEAR": return { items: [] }; default: return state; } }
 
-    function formatarBRL(n){
-      return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
+// -------------------------- // Componente principal // -------------------------- export default function LojaVirtual() { const [cart, dispatch] = useReducer(cartReducer, { items: [] }); const [search, setSearch] = useState(""); const [category, setCategory] = useState("todas"); const [sortBy, setSortBy] = useState("relevancia"); const [minRating, setMinRating] = useState(0); const [favorites, setFavorites] = useState([]);
 
-    function renderizarTabela() {
-      const tbody = document.querySelector("#tabela tbody");
-      tbody.innerHTML = "";
-      produtos.forEach((p, i) => {
-        const v = parseFloat(p.valor) || 0;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${p.nome}</td>
-          <td>R$ ${formatarBRL(v)}</td>
-          <td><button onclick="removerProduto(${i})">❌ Remover</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
+const [detailProduct, setDetailProduct] = useState(null); const [coupon, setCoupon] = useState(""); const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-    function adicionarProduto() {
-      const nome = document.getElementById("nome").value.trim();
-      const valorRaw = document.getElementById("valor").value.trim();
-      if (!nome || !valorRaw) {
-        alert("Preencha o nome e o valor!");
-        return;
-      }
-      const valor = valorRaw.replace(',', '.'); 
-      produtos.push({ nome, valor });
-      localStorage.setItem("produtos_valor", JSON.stringify(produtos));
-      document.getElementById("nome").value = "";
-      document.getElementById("valor").value = "";
-      renderizarTabela();
-    }
+const categories = useMemo(() => ["todas", ...Array.from(new Set(PRODUCTS.map((p) => p.category)))], []);
 
-    function removerProduto(i) {
-      produtos.splice(i,1);
-      localStorage.setItem("produtos_valor", JSON.stringify(produtos));
-      renderizarTabela();
-    }
+const filtered = useMemo(() => { let data = PRODUCTS.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()) || p.desc.toLowerCase().includes(search.toLowerCase()) ); if (category !== "todas") data = data.filter((p) => p.category === category); if (minRating > 0) data = data.filter((p) => p.rating >= minRating);
 
-    function enviarWhatsApp() {
-      if (produtos.length === 0) {
-        alert("A lista está vazia!");
-        return;
-      }
+switch (sortBy) {
+  case "preco-asc":
+    data.sort((a, b) => a.price - b.price);
+    break;
+  case "preco-desc":
+    data.sort((a, b) => b.price - a.price);
+    break;
+  case "rating":
+    data.sort((a, b) => b.rating - a.rating);
+    break;
+  default:
+    // relevância simples: presença de tags e rating
+    data.sort((a, b) => (b.tags?.length || 0) + b.rating - ((a.tags?.length || 0) + a.rating));
+}
+return data;
 
-      let msg = "💰 Lista de produtos:\n\n";
-      produtos.forEach((p, i) => {
-        const v = parseFloat(p.valor) || 0;
-        msg += `- ${p.nome} - R$ ${formatarBRL(v)}\n`;
-      });
+}, [search, category, sortBy, minRating]);
 
-      // CallMeBot API
-      const telefone = "556296094975"; // seu número
-      const chaveAPI = "2198964"; // sua chave do CallMeBot
-      const url = `https://api.callmebot.com/whatsapp.php?phone=${telefone}&text=${encodeURIComponent(msg)}&apikey=${chaveAPI}`;
+const totals = useMemo(() => { const subtotal = cart.items.reduce((sum, i) => sum + i.price * i.qty, 0); const discount = coupon.trim().toUpperCase() === "SALE10" ? subtotal * 0.1 : 0; const shipping = subtotal - discount > 299 ? 0 : cart.items.length > 0 ? 24.9 : 0; const total = Math.max(0, subtotal - discount) + shipping; return { subtotal, discount, shipping, total }; }, [cart.items, coupon]);
 
-      fetch(url)
-        .then(res => res.text())
-        .then(response => {
-          alert("Mensagem enviada com sucesso!");
-        })
-        .catch(err => {
-          console.error(err);
-          alert("Erro ao enviar a mensagem.");
-        });
-    }
+// Persistir favoritos no localStorage (simples) useEffect(() => { try { const raw = localStorage.getItem("loja_favs"); if (raw) setFavorites(JSON.parse(raw)); } catch {} }, []); useEffect(() => { try { localStorage.setItem("loja_favs", JSON.stringify(favorites)); } catch {} }, [favorites]);
 
-    renderizarTabela();
-  </script>
-</body>
-</html>
+return ( <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900"> {/* Header */} <header className="sticky top-0 z-30 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3"> <a href="#" className="flex items-center gap-2 font-bold text-xl"> <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-slate-900 text-white">LV</span> Loja Virtual </a> <div className="ml-auto flex items-center gap-2"> <div className="hidden md:flex items-center gap-2 rounded-2xl border px-3 py-2 bg-white"> <Search className="h-4 w-4" /> <input placeholder="Buscar produtos..." className="w-72 outline-none" value={search} onChange={(e) => setSearch(e.target.value)} /> </div>
+
+{/* Cart */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button className="rounded-2xl" variant="default">
+              <ShoppingCart className="h-4 w-4 mr-2" /> Carrinho ({cart.items.length})
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="w-[480px] sm:w-[540px] p-0">
+            <SheetHeader className="p-4 border-b">
+              <SheetTitle>Seu Carrinho</SheetTitle>
+            </SheetHeader>
+            <div className="p-4 space-y-4">
+              {cart.items.length === 0 && (
+                <p className="text-slate-500">Seu carrinho está vazio.</p>
+              )}
+              {cart.items.map((item) => (
+                <div key={item.id} className="flex gap-3 items-center">
+                  <img src={item.image} alt={item.name} className="h-16 w-16 rounded-xl object-cover border" />
+                  <div className="flex-1">
+                    <div className="font-medium">{item.name}</div>
+                    <div className="text-sm text-slate-500">{BRL.format(item.price)}</div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Label htmlFor={`qty-${item.id}`} className="text-xs text-slate-500">Qtd</Label>
+                      <input
+                        id={`qty-${item.id}`}
+                        type="number"
+                        min={1}
+                        max={item.stock}
+                        value={item.qty}
+                        onChange={(e) =>
+                          dispatch({ type: "SET_QTY", id: item.id, qty: Number(e.target.value), stock: item.stock })
+                        }
+                        className="w-20 rounded-xl border px-2 py-1"
+                      />
+                      <button
+                        onClick={() => dispatch({ type: "REMOVE", id: item.id })}
+                        className="ml-auto text-slate-500 hover:text-red-600"
+                        title="Remover"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Resumo */}
+              <div className="mt-4 rounded-2xl border p-4 space-y-2">
+                <div className="flex justify-between text-sm"><span>Subtotal</span><span>{BRL.format(totals.subtotal)}</span></div>
+                <div className="flex justify-between text-sm"><span>Desconto</span><span>- {BRL.format(totals.discount)}</span></div>
+                <div className="flex justify-between text-sm"><span>Frete</span><span>{totals.shipping === 0 ? "Grátis" : BRL.format(totals.shipping)}</span></div>
+                <div className="border-t pt-2 flex justify-between font-semibold"><span>Total</span><span>{BRL.format(totals.total)}</span></div>
+
+                <div className="mt-3 flex items-center gap-2">
+                  <BadgePercent className="h-4 w-4" />
+                  <input
+                    placeholder="Cupom (ex: SALE10)"
+                    value={coupon}
+                    onChange={(e) => setCoupon(e.target.value)}
+                    className="flex-1 rounded-xl border px-3 py-2"
+                  />
+                </div>
+
+                <Button
+                  disabled={cart.items.length === 0}
+                  onClick={() => setCheckoutOpen(true)}
+                  className="w-full rounded-2xl mt-3"
+                >
+                  <CreditCard className="h-4 w-4 mr-2" /> Finalizar compra
+                </Button>
+              </div>
+
+              {/* Garantias */}
+              <div className="grid grid-cols-3 gap-2 text-xs text-slate-500">
+                <div className="flex items-center gap-2 border rounded-xl p-2"><Truck className="h-4 w-4" /> Envio rápido</div>
+                <div className="flex items-center gap-2 border rounded-xl p-2"><ShieldCheck className="h-4 w-4" /> Compra segura</div>
+                <div className="flex items-center gap-2 border rounded-xl p-2"><BadgePercent className="h-4 w-4" /> Melhor preço</div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+    </div>
+  </header>
+
+  {/* Hero / Filtros */}
+  <section className="mx-auto max-w-7xl px-4 py-6">
+    <div className="rounded-3xl border bg-white p-4 md:p-6 shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center gap-3">
+        <div className="flex items-center gap-2 md:hidden">
+          <Search className="h-4 w-4" />
+          <input
+            placeholder="Buscar produtos..."
+            className="flex-1 rounded-xl border px-3 py-2"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4" />
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="w-44 rounded-2xl">
+              <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={String(minRating)} onValueChange={(v) => setMinRating(Number(v))}>
+            <SelectTrigger className="w-44 rounded-2xl">
+              <SelectValue placeholder="Mín. Avaliação" />
+            </SelectTrigger>
+            <SelectContent>
+              {[0, 3, 4, 4.5].map((r) => (
+                <SelectItem key={r} value={String(r)}>
+                  {r === 0 ? "Qualquer" : `${r}+ estrelas`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-52 rounded-2xl">
+              <SelectValue placeholder="Ordenar por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="relevancia">Relevância</SelectItem>
+              <SelectItem value="preco-asc">Preço: menor → maior</SelectItem>
+              <SelectItem value="preco-desc">Preço: maior → menor</SelectItem>
+              <SelectItem value="rating">Melhor avaliação</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="ml-auto text-sm text-slate-500">{filtered.length} produto(s) encontrados</div>
+      </div>
+    </div>
+  </section>
+
+  {/* Lista de produtos */}
+  <main className="mx-auto max-w-7xl px-4 pb-16">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {filtered.map((p) => (
+        <motion.div key={p.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="rounded-3xl overflow-hidden">
+            <div className="relative">
+              <img src={p.image} alt={p.name} className="h-56 w-full object-cover" />
+              <div className="absolute left-3 top-3 flex gap-2">
+                {p.tags?.map((t) => (
+                  <Badge key={t} className="rounded-xl bg-slate-900 text-white">{t}</Badge>
+                ))}
+              </div>
+              <button
+                className={classNames(
+                  "absolute right-3 top-3 rounded-full p-2 border bg-white",
+                  favorites.includes(p.id) ? "text-rose-600" : "text-slate-500"
+                )}
+                onClick={() =>
+                  setFavorites((f) => (f.includes(p.id) ? f.filter((x) => x !== p.id) : [...f, p.id]))
+                }
+                title="Favoritar"
+              >
+                <Heart className="h-4 w-4" />
+              </button>
+            </div>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">{p.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-slate-600 line-clamp-2">{p.desc}</p>
+              <div className="flex items-center gap-1 text-amber-500">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className={classNames("h-4 w-4", i + 1 <= Math.round(p.rating) ? "fill-current" : "opacity-30")} />
+                ))}
+                <span className="ml-1 text-xs text-slate-500">{p.rating.toFixed(1)}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="text-xl font-semibold">{BRL.format(p.price)}</div>
+                <div className="text-xs text-slate-500">{p.stock} em estoque</div>
+              </div>
+              <div className="flex gap-2">
+                <Button className="rounded-2xl flex-1" onClick={() => dispatch({ type: "ADD", product: p })}>
+                  <ShoppingCart className="h-4 w-4 mr-2" /> Adicionar
+                </Button>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="rounded-2xl">Detalhes</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>{p.name}</DialogTitle>
+                      <DialogDescription>{p.desc}</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid md:grid-cols-2 gap-4 items-start">
+                      <img src={p.image} alt={p.name} className="w-full rounded-2xl border object-cover" />
+                      <div className="space-y-3">
+                        <div className="text-2xl font-semibold">{BRL.format(p.price)}</div>
+                        <div className="flex items-center gap-1 text-amber-500">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={classNames("h-4 w-4", i + 1 <= Math.round(p.rating) ? "fill-current" : "opacity-30")} />
+                          ))}
+                          <span className="ml-1 text-xs text-slate-500">{p.rating.toFixed(1)}</span>
+                        </div>
+                        <div className="text-sm text-slate-600">Categoria: {p.category}</div>
+                        <div className="text-sm text-slate-600">Estoque: {p.stock}</div>
+                        <div className="flex gap-2">
+                          <Button className="rounded-2xl flex-1" onClick={() => dispatch({ type: "ADD", product: p })}>
+                            <ShoppingCart className="h-4 w-4 mr-2" /> Adicionar ao carrinho
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      ))}
+    </div>
+  </main>
+
+  {/* Checkout */}
+  <CheckoutDialog
+    open={checkoutOpen}
+    setOpen={setCheckoutOpen}
+    cart={cart}
+    totals={totals}
+    onClear={() => dispatch({ type: "CLEAR" })}
+  />
+
+  {/* Footer */}
+  <footer className="border-t bg-white">
+    <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-slate-500 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+      <div>© {new Date().getFullYear()} Loja Virtual. Todos os direitos reservados.</div>
+      <div className="flex gap-4">
+        <a className="hover:text-slate-900" href="#">Política de Privacidade</a>
+        <a className="hover:text-slate-900" href="#">Termos de Uso</a>
+        <a className="hover:text-slate-900" href="#">Contato</a>
+      </div>
+    </div>
+  </footer>
+</div>
+
+); }
+
+function CheckoutDialog({ open, setOpen, cart, totals, onClear }) { const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [address, setAddress] = useState(""); const [cardNumber, setCardNumber] = useState(""); const [processing, setProcessing] = useState(false); const [success, setSuccess] = useState(false); const [orderId, setOrderId] = useState("");
+
+function validate() { return ( name.trim().length > 2 && /.+@.+..+/.test(email) && address.trim().length > 5 && cardNumber.replace(/\s+/g, "").length >= 12 && cart.items.length > 0 ); }
+
+async function handlePay() { if (!validate()) return; setProcessing(true); // Simula processamento de pagamento await new Promise((r) => setTimeout(r, 1200)); setProcessing(false); setSuccess(true); setOrderId("LV-" + Math.random().toString(36).slice(2, 8).toUpperCase()); onClear(); }
+
+return ( <Dialog open={open} onOpenChange={setOpen}> <DialogContent className="max-w-3xl"> <DialogHeader> <DialogTitle>Finalizar compra</DialogTitle> <DialogDescription>Preencha seus dados para concluir o pedido.</DialogDescription> </DialogHeader>
+
+{!success ? (
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <div>
+            <Label>Nome completo</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="rounded-2xl mt-1" />
+          </div>
+          <div>
+            <Label>E-mail</Label>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-2xl mt-1" />
+ 
