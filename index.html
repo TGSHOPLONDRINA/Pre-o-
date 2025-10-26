@@ -1,314 +1,352 @@
-import React, { useMemo, useReducer, useState, useEffect } from "react"; import { motion, AnimatePresence } from "framer-motion"; import { ShoppingCart, Search, Star, ChevronDown, Trash2, X, BadgePercent, Truck, ShieldCheck, CreditCard, Check, Filter, Heart, } from "lucide-react";
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LevelUp Store - Painel de Fornecedores</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #2e0854, #000);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
 
-// shadcn/ui components import { Button } from "@/components/ui/button"; import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; import { Badge } from "@/components/ui/badge"; import { Input } from "@/components/ui/input"; import { Label } from "@/components/ui/label"; import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, } from "@/components/ui/dialog"; import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"; import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue, } from "@/components/ui/select";
+    h1, h2 { text-align: center; }
 
-// -------------------------- // Mock data (substitua por API/BD depois) // -------------------------- const PRODUCTS = [ { id: "p1", name: "Tênis Runner Pro", desc: "Conforto e performance para o dia a dia.", price: 349.9, rating: 4.6, category: "Calçados", stock: 12, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200&auto=format&fit=crop", tags: ["novo", "frete grátis"], }, { id: "p2", name: "Headphone Studio X", desc: "Som imersivo com cancelamento de ruído.", price: 599.0, rating: 4.8, category: "Eletrônicos", stock: 8, image: "https://images.unsplash.com/photo-1518442253053-3e7c381a3a8a?q=80&w=1200&auto=format&fit=crop", tags: ["destaque"], }, { id: "p3", name: "Mochila Travel 35L", desc: "Resistente à água, ideal para viagens.", price: 279.5, rating: 4.4, category: "Acessórios", stock: 20, image: "https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?q=80&w=1200&auto=format&fit=crop", tags: ["promo"], }, { id: "p4", name: "Relógio SmartFit", desc: "Monitoramento de saúde e notificações.", price: 399.9, rating: 4.2, category: "Eletrônicos", stock: 15, image: "https://images.unsplash.com/photo-1518442253035-04e0b6a54d3f?q=80&w=1200&auto=format&fit=crop", tags: ["novo"], }, { id: "p5", name: "Camisa Tech Dry", desc: "Tecido respirável, secagem rápida.", price: 129.9, rating: 4.1, category: "Vestuário", stock: 30, image: "https://images.unsplash.com/photo-1520975922215-230a5b49f743?q=80&w=1200&auto=format&fit=crop", tags: ["essencial"], }, { id: "p6", name: "Garrafa Térmica 1L", desc: "Mantém a temperatura por 12h.", price: 89.9, rating: 4.7, category: "Acessórios", stock: 40, image: "https://images.unsplash.com/photo-1533674689012-136b487cd4d5?q=80&w=1200&auto=format&fit=crop", tags: ["frete grátis"], }, ];
+    .btn {
+      background: linear-gradient(90deg, #a47cff, #ffd700);
+      border: none;
+      color: #000;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+    }
 
-// -------------------------- // Utilitários // -------------------------- const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+    .btn:hover {
+      transform: scale(1.05);
+      background: linear-gradient(90deg, #8b5cf6, #facc15);
+    }
 
-function classNames(...xs) { return xs.filter(Boolean).join(" "); }
+    .login-container, .painel-container {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 30px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+      backdrop-filter: blur(10px);
+    }
 
-// -------------------------- // Carrinho (Reducer) // -------------------------- function cartReducer(state, action) { switch (action.type) { case "ADD": { const { product, qty = 1 } = action; const exists = state.items.find((i) => i.id === product.id); let items; if (exists) { items = state.items.map((i) => (i.id === product.id ? { ...i, qty: Math.min(i.qty + qty, product.stock) } : i)); } else { items = [...state.items, { ...product, qty: Math.min(qty, product.stock) }]; } return { ...state, items }; } case "REMOVE": { return { ...state, items: state.items.filter((i) => i.id !== action.id) }; } case "SET_QTY": { const { id, qty, stock } = action; return { ...state, items: state.items.map((i) => (i.id === id ? { ...i, qty: Math.max(1, Math.min(qty, stock)) } : i)), }; } case "CLEAR": return { items: [] }; default: return state; } }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0 20px 0;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+    }
 
-// -------------------------- // Componente principal // -------------------------- export default function LojaVirtual() { const [cart, dispatch] = useReducer(cartReducer, { items: [] }); const [search, setSearch] = useState(""); const [category, setCategory] = useState("todas"); const [sortBy, setSortBy] = useState("relevancia"); const [minRating, setMinRating] = useState(0); const [favorites, setFavorites] = useState([]);
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
 
-const [detailProduct, setDetailProduct] = useState(null); const [coupon, setCoupon] = useState(""); const [checkoutOpen, setCheckoutOpen] = useState(false);
+    th, td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      text-align: left;
+    }
 
-const categories = useMemo(() => ["todas", ...Array.from(new Set(PRODUCTS.map((p) => p.category)))], []);
+    th { color: #ffd700; }
 
-const filtered = useMemo(() => { let data = PRODUCTS.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()) || p.desc.toLowerCase().includes(search.toLowerCase()) ); if (category !== "todas") data = data.filter((p) => p.category === category); if (minRating > 0) data = data.filter((p) => p.rating >= minRating);
+    td.price {
+      color: #ffd700;
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    }
 
-switch (sortBy) {
-  case "preco-asc":
-    data.sort((a, b) => a.price - b.price);
-    break;
-  case "preco-desc":
-    data.sort((a, b) => b.price - a.price);
-    break;
-  case "rating":
-    data.sort((a, b) => b.rating - a.rating);
-    break;
-  default:
-    // relevância simples: presença de tags e rating
-    data.sort((a, b) => (b.tags?.length || 0) + b.rating - ((a.tags?.length || 0) + a.rating));
-}
-return data;
+    .hidden { display: none; }
 
-}, [search, category, sortBy, minRating]);
+    .footer {
+      margin-top: 30px;
+      font-size: 14px;
+      color: #bbb;
+    }
 
-const totals = useMemo(() => { const subtotal = cart.items.reduce((sum, i) => sum + i.price * i.qty, 0); const discount = coupon.trim().toUpperCase() === "SALE10" ? subtotal * 0.1 : 0; const shipping = subtotal - discount > 299 ? 0 : cart.items.length > 0 ? 24.9 : 0; const total = Math.max(0, subtotal - discount) + shipping; return { subtotal, discount, shipping, total }; }, [cart.items, coupon]);
+    /* 🛒 Ícone do carrinho */
+    #carrinhoIcone {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      font-size: 30px;
+      background: linear-gradient(90deg, #a47cff, #ffd700);
+      color: #000;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+      z-index: 999;
+      transition: transform 0.3s;
+    }
 
-// Persistir favoritos no localStorage (simples) useEffect(() => { try { const raw = localStorage.getItem("loja_favs"); if (raw) setFavorites(JSON.parse(raw)); } catch {} }, []); useEffect(() => { try { localStorage.setItem("loja_favs", JSON.stringify(favorites)); } catch {} }, [favorites]);
+    #carrinhoIcone:hover { transform: scale(1.1); }
 
-return ( <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 text-slate-900"> {/* Header */} <header className="sticky top-0 z-30 border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60"> <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3"> <a href="#" className="flex items-center gap-2 font-bold text-xl"> <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-slate-900 text-white">LV</span> Loja Virtual </a> <div className="ml-auto flex items-center gap-2"> <div className="hidden md:flex items-center gap-2 rounded-2xl border px-3 py-2 bg-white"> <Search className="h-4 w-4" /> <input placeholder="Buscar produtos..." className="w-72 outline-none" value={search} onChange={(e) => setSearch(e.target.value)} /> </div>
+    /* Painel do carrinho */
+    #carrinhoContainer {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      background: rgba(20, 20, 20, 0.95);
+      width: 320px;
+      max-height: 75%;
+      border-top-left-radius: 20px;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+      transform: translateY(100%);
+      transition: transform 0.4s ease;
+      overflow-y: auto;
+      padding: 20px;
+      z-index: 1000;
+    }
 
-{/* Cart */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button className="rounded-2xl" variant="default">
-              <ShoppingCart className="h-4 w-4 mr-2" /> Carrinho ({cart.items.length})
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="w-[480px] sm:w-[540px] p-0">
-            <SheetHeader className="p-4 border-b">
-              <SheetTitle>Seu Carrinho</SheetTitle>
-            </SheetHeader>
-            <div className="p-4 space-y-4">
-              {cart.items.length === 0 && (
-                <p className="text-slate-500">Seu carrinho está vazio.</p>
-              )}
-              {cart.items.map((item) => (
-                <div key={item.id} className="flex gap-3 items-center">
-                  <img src={item.image} alt={item.name} className="h-16 w-16 rounded-xl object-cover border" />
-                  <div className="flex-1">
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-sm text-slate-500">{BRL.format(item.price)}</div>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Label htmlFor={`qty-${item.id}`} className="text-xs text-slate-500">Qtd</Label>
-                      <input
-                        id={`qty-${item.id}`}
-                        type="number"
-                        min={1}
-                        max={item.stock}
-                        value={item.qty}
-                        onChange={(e) =>
-                          dispatch({ type: "SET_QTY", id: item.id, qty: Number(e.target.value), stock: item.stock })
-                        }
-                        className="w-20 rounded-xl border px-2 py-1"
-                      />
-                      <button
-                        onClick={() => dispatch({ type: "REMOVE", id: item.id })}
-                        className="ml-auto text-slate-500 hover:text-red-600"
-                        title="Remover"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+    #carrinhoContainer.aberto { transform: translateY(0); }
 
-              {/* Resumo */}
-              <div className="mt-4 rounded-2xl border p-4 space-y-2">
-                <div className="flex justify-between text-sm"><span>Subtotal</span><span>{BRL.format(totals.subtotal)}</span></div>
-                <div className="flex justify-between text-sm"><span>Desconto</span><span>- {BRL.format(totals.discount)}</span></div>
-                <div className="flex justify-between text-sm"><span>Frete</span><span>{totals.shipping === 0 ? "Grátis" : BRL.format(totals.shipping)}</span></div>
-                <div className="border-t pt-2 flex justify-between font-semibold"><span>Total</span><span>{BRL.format(totals.total)}</span></div>
+    .carrinho-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding-bottom: 8px;
+    }
 
-                <div className="mt-3 flex items-center gap-2">
-                  <BadgePercent className="h-4 w-4" />
-                  <input
-                    placeholder="Cupom (ex: SALE10)"
-                    value={coupon}
-                    onChange={(e) => setCoupon(e.target.value)}
-                    className="flex-1 rounded-xl border px-3 py-2"
-                  />
-                </div>
+    .carrinho-item span { font-size: 14px; }
 
-                <Button
-                  disabled={cart.items.length === 0}
-                  onClick={() => setCheckoutOpen(true)}
-                  className="w-full rounded-2xl mt-3"
-                >
-                  <CreditCard className="h-4 w-4 mr-2" /> Finalizar compra
-                </Button>
-              </div>
+    .qtd-btn {
+      background: #ffd700;
+      border: none;
+      border-radius: 6px;
+      padding: 2px 8px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #000;
+    }
 
-              {/* Garantias */}
-              <div className="grid grid-cols-3 gap-2 text-xs text-slate-500">
-                <div className="flex items-center gap-2 border rounded-xl p-2"><Truck className="h-4 w-4" /> Envio rápido</div>
-                <div className="flex items-center gap-2 border rounded-xl p-2"><ShieldCheck className="h-4 w-4" /> Compra segura</div>
-                <div className="flex items-center gap-2 border rounded-xl p-2"><BadgePercent className="h-4 w-4" /> Melhor preço</div>
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
+    .remove-btn {
+      background: #ff4747;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 8px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .fechar-btn, .finalizar-btn {
+      width: 100%;
+      border: none;
+      padding: 10px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .fechar-btn {
+      background: linear-gradient(90deg, #a47cff, #ffd700);
+      color: #000;
+    }
+
+    .finalizar-btn {
+      background: linear-gradient(90deg, #25D366, #128C7E);
+      color: #fff;
+    }
+
+    #vendedor-info {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container" id="loginPopup">
+    <h1>LevelUp Store 💎</h1>
+    <p>Entre com seu nome e código de vendedor para acessar o painel.</p>
+    <input type="text" id="nomeVendedor" placeholder="Digite seu nome">
+    <input type="password" id="codigo" placeholder="Digite seu código">
+    <button class="btn" id="entrar">Entrar</button>
+    <p class="footer">Acesso exclusivo para vendedores autorizados.</p>
+  </div>
+
+  <div class="painel-container hidden" id="painel">
+    <div id="vendedor-info"></div>
+
+    <h2>📦 Painel de Fornecedor</h2>
+
+    <h3 style="color:#ffd700;">Contas Fake Avakin</h3>
+    <table>
+      <tr><th>Produto</th><th>Preço</th><th>Ação</th></tr>
+      <tr><td>Conta Fake 20K</td><td class="price">R$ 3,99</td><td><button class="btn" onclick="adicionarCarrinho('Conta Fake 20K', 3.99)">Adicionar</button></td></tr>
+      <tr><td>Conta Fake 25K</td><td class="price">R$ 4,99</td><td><button class="btn" onclick="adicionarCarrinho('Conta Fake 25K', 4.99)">Adicionar</button></td></tr>
+    </table>
+
+    <h3 style="color:#ffd700;margin-top:30px;">Likes e Views Avakin Life</h3>
+    <table>
+      <tr><th>Pacote</th><th>Preço</th><th>Ação</th></tr>
+      <tr><td>1K Likes + Views</td><td class="price">R$ 5,35</td><td><button class="btn" onclick="adicionarCarrinho('1K Likes + Views', 5.35)">Adicionar</button></td></tr>
+      <tr><td>5K Likes + Views</td><td class="price">R$ 14,99</td><td><button class="btn" onclick="adicionarCarrinho('5K Likes + Views', 14.99)">Adicionar</button></td></tr>
+      <tr><td>10K Likes + Views</td><td class="price">R$ 24,50</td><td><button class="btn" onclick="adicionarCarrinho('10K Likes + Views', 24.50)">Adicionar</button></td></tr>
+      <tr><td>25K Likes + Views</td><td class="price">R$ 46,99</td><td><button class="btn" onclick="adicionarCarrinho('25K Likes + Views', 46.99)">Adicionar</button></td></tr>
+    </table>
+
+    <div style="text-align:center;margin-top:20px;">
+      <button class="btn" onclick="logout()">Sair</button>
     </div>
-  </header>
+  </div>
 
-  {/* Hero / Filtros */}
-  <section className="mx-auto max-w-7xl px-4 py-6">
-    <div className="rounded-3xl border bg-white p-4 md:p-6 shadow-sm">
-      <div className="flex flex-col md:flex-row md:items-center gap-3">
-        <div className="flex items-center gap-2 md:hidden">
-          <Search className="h-4 w-4" />
-          <input
-            placeholder="Buscar produtos..."
-            className="flex-1 rounded-xl border px-3 py-2"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="w-44 rounded-2xl">
-              <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+  <!-- 🛒 Ícone e Painel do Carrinho -->
+  <div id="carrinhoIcone">🛒</div>
 
-          <Select value={String(minRating)} onValueChange={(v) => setMinRating(Number(v))}>
-            <SelectTrigger className="w-44 rounded-2xl">
-              <SelectValue placeholder="Mín. Avaliação" />
-            </SelectTrigger>
-            <SelectContent>
-              {[0, 3, 4, 4.5].map((r) => (
-                <SelectItem key={r} value={String(r)}>
-                  {r === 0 ? "Qualquer" : `${r}+ estrelas`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+  <div id="carrinhoContainer">
+    <h3 style="color:#ffd700;">🛍️ Seu Carrinho</h3>
+    <div id="itensCarrinho"></div>
+    <p id="totalCarrinho" style="margin-top:10px;font-weight:bold;">Total: R$ 0,00</p>
+    <button class="finalizar-btn" onclick="finalizarPedido()">Finalizar Pedido no WhatsApp</button>
+    <button class="fechar-btn" onclick="fecharCarrinho()">Fechar Carrinho</button>
+  </div>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-52 rounded-2xl">
-              <SelectValue placeholder="Ordenar por" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="relevancia">Relevância</SelectItem>
-              <SelectItem value="preco-asc">Preço: menor → maior</SelectItem>
-              <SelectItem value="preco-desc">Preço: maior → menor</SelectItem>
-              <SelectItem value="rating">Melhor avaliação</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+  <script>
+    const codigosLiberados = ["a_@F_LnYg5_FofZ", "b_@T_XkJ7_Mt_Lux"];
+    const loginPopup = document.getElementById("loginPopup");
+    const painel = document.getElementById("painel");
+    const entrarBtn = document.getElementById("entrar");
+    const codigoInput = document.getElementById("codigo");
+    const nomeInput = document.getElementById("nomeVendedor");
+    const vendedorInfo = document.getElementById("vendedor-info");
+    const carrinhoIcone = document.getElementById("carrinhoIcone");
 
-        <div className="ml-auto text-sm text-slate-500">{filtered.length} produto(s) encontrados</div>
-      </div>
-    </div>
-  </section>
+    let vendedorAtual = "";
+    let codigoAtual = "";
 
-  {/* Lista de produtos */}
-  <main className="mx-auto max-w-7xl px-4 pb-16">
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {filtered.map((p) => (
-        <motion.div key={p.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="rounded-3xl overflow-hidden">
-            <div className="relative">
-              <img src={p.image} alt={p.name} className="h-56 w-full object-cover" />
-              <div className="absolute left-3 top-3 flex gap-2">
-                {p.tags?.map((t) => (
-                  <Badge key={t} className="rounded-xl bg-slate-900 text-white">{t}</Badge>
-                ))}
-              </div>
-              <button
-                className={classNames(
-                  "absolute right-3 top-3 rounded-full p-2 border bg-white",
-                  favorites.includes(p.id) ? "text-rose-600" : "text-slate-500"
-                )}
-                onClick={() =>
-                  setFavorites((f) => (f.includes(p.id) ? f.filter((x) => x !== p.id) : [...f, p.id]))
-                }
-                title="Favoritar"
-              >
-                <Heart className="h-4 w-4" />
-              </button>
-            </div>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">{p.name}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-slate-600 line-clamp-2">{p.desc}</p>
-              <div className="flex items-center gap-1 text-amber-500">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={classNames("h-4 w-4", i + 1 <= Math.round(p.rating) ? "fill-current" : "opacity-30")} />
-                ))}
-                <span className="ml-1 text-xs text-slate-500">{p.rating.toFixed(1)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="text-xl font-semibold">{BRL.format(p.price)}</div>
-                <div className="text-xs text-slate-500">{p.stock} em estoque</div>
-              </div>
-              <div className="flex gap-2">
-                <Button className="rounded-2xl flex-1" onClick={() => dispatch({ type: "ADD", product: p })}>
-                  <ShoppingCart className="h-4 w-4 mr-2" /> Adicionar
-                </Button>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="rounded-2xl">Detalhes</Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>{p.name}</DialogTitle>
-                      <DialogDescription>{p.desc}</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid md:grid-cols-2 gap-4 items-start">
-                      <img src={p.image} alt={p.name} className="w-full rounded-2xl border object-cover" />
-                      <div className="space-y-3">
-                        <div className="text-2xl font-semibold">{BRL.format(p.price)}</div>
-                        <div className="flex items-center gap-1 text-amber-500">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} className={classNames("h-4 w-4", i + 1 <= Math.round(p.rating) ? "fill-current" : "opacity-30")} />
-                          ))}
-                          <span className="ml-1 text-xs text-slate-500">{p.rating.toFixed(1)}</span>
-                        </div>
-                        <div className="text-sm text-slate-600">Categoria: {p.category}</div>
-                        <div className="text-sm text-slate-600">Estoque: {p.stock}</div>
-                        <div className="flex gap-2">
-                          <Button className="rounded-2xl flex-1" onClick={() => dispatch({ type: "ADD", product: p })}>
-                            <ShoppingCart className="h-4 w-4 mr-2" /> Adicionar ao carrinho
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      ))}
-    </div>
-  </main>
+    entrarBtn.addEventListener("click", () => {
+      const codigo = codigoInput.value.trim();
+      const nome = nomeInput.value.trim();
 
-  {/* Checkout */}
-  <CheckoutDialog
-    open={checkoutOpen}
-    setOpen={setCheckoutOpen}
-    cart={cart}
-    totals={totals}
-    onClear={() => dispatch({ type: "CLEAR" })}
-  />
+      if (codigosLiberados.includes(codigo) && nome !== "") {
+        vendedorAtual = nome;
+        codigoAtual = codigo;
+        loginPopup.classList.add("hidden");
+        painel.classList.remove("hidden");
+        carrinhoIcone.style.display = "flex";
+        vendedorInfo.innerHTML = `<b>Vendedor:</b> ${vendedorAtual}<br><b>Código:</b> ${codigoAtual}`;
+      } else {
+        alert("Código inválido ou nome em branco.");
+      }
+    });
 
-  {/* Footer */}
-  <footer className="border-t bg-white">
-    <div className="mx-auto max-w-7xl px-4 py-8 text-sm text-slate-500 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-      <div>© {new Date().getFullYear()} Loja Virtual. Todos os direitos reservados.</div>
-      <div className="flex gap-4">
-        <a className="hover:text-slate-900" href="#">Política de Privacidade</a>
-        <a className="hover:text-slate-900" href="#">Termos de Uso</a>
-        <a className="hover:text-slate-900" href="#">Contato</a>
-      </div>
-    </div>
-  </footer>
-</div>
+    function logout() {
+      painel.classList.add("hidden");
+      loginPopup.classList.remove("hidden");
+      codigoInput.value = "";
+      nomeInput.value = "";
+      carrinhoIcone.style.display = "none";
+    }
 
-); }
+    // 🛒 Carrinho
+    const carrinho = [];
+    const carrinhoContainer = document.getElementById("carrinhoContainer");
+    const itensCarrinhoDiv = document.getElementById("itensCarrinho");
+    const totalCarrinho = document.getElementById("totalCarrinho");
 
-function CheckoutDialog({ open, setOpen, cart, totals, onClear }) { const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [address, setAddress] = useState(""); const [cardNumber, setCardNumber] = useState(""); const [processing, setProcessing] = useState(false); const [success, setSuccess] = useState(false); const [orderId, setOrderId] = useState("");
+    carrinhoIcone.addEventListener("click", () => {
+      carrinhoContainer.classList.toggle("aberto");
+      atualizarCarrinho();
+    });
 
-function validate() { return ( name.trim().length > 2 && /.+@.+..+/.test(email) && address.trim().length > 5 && cardNumber.replace(/\s+/g, "").length >= 12 && cart.items.length > 0 ); }
+    function adicionarCarrinho(nome, preco) {
+      const item = carrinho.find(i => i.nome === nome);
+      if (item) {
+        item.qtd++;
+      } else {
+        carrinho.push({ nome, preco, qtd: 1 });
+      }
+      atualizarCarrinho();
+    }
 
-async function handlePay() { if (!validate()) return; setProcessing(true); // Simula processamento de pagamento await new Promise((r) => setTimeout(r, 1200)); setProcessing(false); setSuccess(true); setOrderId("LV-" + Math.random().toString(36).slice(2, 8).toUpperCase()); onClear(); }
+    function alterarQtd(nome, delta) {
+      const item = carrinho.find(i => i.nome === nome);
+      if (!item) return;
+      item.qtd += delta;
+      if (item.qtd <= 0) removerItem(nome);
+      atualizarCarrinho();
+    }
 
-return ( <Dialog open={open} onOpenChange={setOpen}> <DialogContent className="max-w-3xl"> <DialogHeader> <DialogTitle>Finalizar compra</DialogTitle> <DialogDescription>Preencha seus dados para concluir o pedido.</DialogDescription> </DialogHeader>
+    function removerItem(nome) {
+      const index = carrinho.findIndex(i => i.nome === nome);
+      if (index > -1) carrinho.splice(index, 1);
+      atualizarCarrinho();
+    }
 
-{!success ? (
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="space-y-3">
+    function atualizarCarrinho() {
+      itensCarrinhoDiv.innerHTML = "";
+      let total = 0;
+      carrinho.forEach(item => {
+        total += item.preco * item.qtd;
+        const div = document.createElement("div");
+        div.classList.add("carrinho-item");
+        div.innerHTML = `
+          <span>${item.nome}</span>
           <div>
-            <Label>Nome completo</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} className="rounded-2xl mt-1" />
+            <button class="qtd-btn" onclick="alterarQtd('${item.nome}', -1)">-</button>
+            <span>${item.qtd}</span>
+            <button class="qtd-btn" onclick="alterarQtd('${item.nome}', 1)">+</button>
+            <button class="remove-btn" onclick="removerItem('${item.nome}')">x</button>
           </div>
-          <div>
-            <Label>E-mail</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-2xl mt-1" />
- 
+        `;
+        itensCarrinhoDiv.appendChild(div);
+      });
+      totalCarrinho.textContent = `Total: R$ ${total.toFixed(2)}`;
+    }
+
+    function fecharCarrinho() {
+      carrinhoContainer.classList.remove("aberto");
+    }
+
+    function finalizarPedido() {
+      if (carrinho.length === 0) {
+        alert("Seu carrinho está vazio!");
+        return;
+      }
+      let mensagem = `📦 *Novo Pedido - LevelUp Store*\n\n👤 *Vendedor:* ${vendedorAtual}\n🔑 *Código:* ${codigoAtual}\n\n`;
+      let total = 0;
+      carrinho.forEach(item => {
+        mensagem += `• ${item.nome} — ${item.qtd}x (R$ ${item.preco.toFixed(2)})\n`;
+        total += item.preco * item.qtd;
+      });
+      mensagem += `\n💰 *Total: R$ ${total.toFixed(2)}*\n\nPor favor, confirme meu pedido.`;
+      
+      const numeroWhats = "556296094975"; // ← coloque aqui o número do WhatsApp com DDI e DDD
+      const url = `https://wa.me/${numeroWhats}?text=${encodeURIComponent(mensagem)}`;
+      window.open(url, "_blank");
+    }
+  </script>
+</body>
+</html>
