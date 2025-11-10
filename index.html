@@ -1,10 +1,14 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calculadora de Lucro — Gamer Edition</title>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- SweetAlert2 (versão compatível com celular) -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+
 <style>
     body {
         font-family: 'Poppins', sans-serif;
@@ -19,6 +23,7 @@
         color: #00c3ff;
         text-shadow: 0 0 10px #00c3ff;
         margin-top: 30px;
+        font-size: 1.8rem;
     }
 
     .container {
@@ -35,13 +40,15 @@
         border-radius: 20px;
         box-shadow: 0 0 25px rgba(0, 195, 255, 0.2);
         padding: 25px;
-        width: 380px;
+        width: 90%;
+        max-width: 380px;
     }
 
     label {
         display: block;
         margin-bottom: 5px;
         color: #ccc;
+        font-size: 0.9rem;
     }
 
     input {
@@ -91,10 +98,22 @@
         color: #00ffea;
         font-weight: bold;
     }
+
+    hr {
+        border: 1px solid #111;
+        margin: 10px 0;
+    }
+
+    @media (max-width: 600px) {
+        h1 { font-size: 1.5rem; }
+        .card { width: 95%; padding: 20px; }
+    }
 </style>
 </head>
 <body>
+
     <h1>💰 Calculadora de Lucro — Gamer Edition</h1>
+
     <div class="container">
         <div class="card">
             <label>Preço de venda (R$)</label>
@@ -125,18 +144,12 @@
             <h2 style="text-align:center; color:#00ffea;">Resultados</h2>
             <div class="result-box">
                 <p>Lucro Bruto: <span id="lucroBruto" class="highlight">R$ 0,00</span></p>
-                <p>Taxa Plataforma: <span id="taxaPlataforma" class="highlight">R$ 
-
-0,00</span></p>
-                <p>Lucro Líquido: <span id="lucroLiquido" class="highlight">R$ 
-
-0,00</span></p>
+                <p>Taxa Plataforma: <span id="taxaPlataforma" class="highlight">R$ 0,00</span></p>
+                <p>Lucro Líquido: <span id="lucroLiquido" class="highlight">R$ 0,00</span></p>
                 <p>Margem Líquida: <span id="margem" class="highlight">0%</span></p>
                 <p>Lucro Total: <span id="lucroTotal" class="highlight">R$ 0,00</span></p>
-                <hr style="border-color:#222;">
-                <p>💵 Uso Pessoal: <span id="usoPessoal" class="highlight">R$ 
-
-0,00</span></p>
+                <hr>
+                <p>💵 Uso Pessoal: <span id="usoPessoal" class="highlight">R$ 0,00</span></p>
                 <p>🔁 Reposição: <span id="reposicao" class="highlight">R$ 0,00</span></p>
             </div>
         </div>
@@ -150,45 +163,38 @@ function calcular() {
     const outras = parseFloat(document.getElementById("outras").value) || 0;
     const quantidade = parseFloat(document.getElementById("quantidade").value) || 1;
     const casas = parseInt(document.getElementById("casas").value) || 2;
-    const percentualPessoal = parseFloat(document.getElementById
+    const percentualPessoal = parseFloat(document.getElementById("percentualPessoal").value) || 0;
 
-("percentualPessoal").value) || 0;
-
+    // cálculos
     const taxaPlataforma = (preco * taxa) / 100;
     const lucroBruto = preco - custo;
     const lucroLiquido = preco - custo - taxaPlataforma - outras;
-    const margem = (lucroLiquido / preco) * 100;
+    const margem = preco > 0 ? (lucroLiquido / preco) * 100 : 0;
     const lucroTotal = lucroLiquido * quantidade;
 
     const usoPessoal = (lucroTotal * percentualPessoal) / 100;
     const reposicao = custo * quantidade;
 
-    // Atualizar resultados
+    // atualização dos resultados
     document.getElementById("lucroBruto").innerText = "R$ " + lucroBruto.toFixed(casas);
-    document.getElementById("taxaPlataforma").innerText = "R$ " + taxaPlataforma.toFixed
-
-(casas);
-    document.getElementById("lucroLiquido").innerText = "R$ " + lucroLiquido.toFixed
-
-(casas);
+    document.getElementById("taxaPlataforma").innerText = "R$ " + taxaPlataforma.toFixed(casas);
+    document.getElementById("lucroLiquido").innerText = "R$ " + lucroLiquido.toFixed(casas);
     document.getElementById("margem").innerText = margem.toFixed(2) + "%";
     document.getElementById("lucroTotal").innerText = "R$ " + lucroTotal.toFixed(casas);
     document.getElementById("usoPessoal").innerText = "R$ " + usoPessoal.toFixed(casas);
     document.getElementById("reposicao").innerText = "R$ " + reposicao.toFixed(casas);
 
-    // Mostrar alerta só se houver lucro > 0 e uso pessoal + reposição ultrapassarem o 
-
-total
+    // pop-up elegante — só aparece se houver lucro real
     if (lucroTotal > 0 && (usoPessoal + reposicao) > lucroTotal) {
         Swal.fire({
             icon: 'warning',
             title: '⚠️ Atenção!',
-            text: 'Se você tirar tudo pra uso pessoal, não vai sobrar para recomprar 
-
-produtos!',
+            text: 'Se você tirar tudo pra uso pessoal, não vai sobrar para recomprar produtos!',
             confirmButtonColor: '#00c3ff',
             background: '#101020',
             color: '#fff',
+            showClass: { popup: 'swal2-show' },
+            hideClass: { popup: 'swal2-hide' }
         });
     }
 }
