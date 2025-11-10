@@ -1,352 +1,197 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LevelUp Store - Painel de Fornecedores</title>
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Lucro — Gamer Edition</title>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
     body {
-      margin: 0;
-      font-family: "Poppins", sans-serif;
-      background: linear-gradient(135deg, #2e0854, #000);
-      color: #fff;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+        font-family: 'Poppins', sans-serif;
+        background: radial-gradient(circle at top, #0a0a12, #05050a);
+        color: #fff;
+        margin: 0;
+        padding: 0;
     }
 
-    h1, h2 { text-align: center; }
-
-    .btn {
-      background: linear-gradient(90deg, #a47cff, #ffd700);
-      border: none;
-      color: #000;
-      padding: 10px 20px;
-      font-size: 16px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: 0.3s;
+    h1 {
+        text-align: center;
+        color: #00c3ff;
+        text-shadow: 0 0 10px #00c3ff;
+        margin-top: 30px;
     }
 
-    .btn:hover {
-      transform: scale(1.05);
-      background: linear-gradient(90deg, #8b5cf6, #facc15);
+    .container {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 20px;
     }
 
-    .login-container, .painel-container {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 16px;
-      padding: 30px;
-      width: 90%;
-      max-width: 420px;
-      box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
-      backdrop-filter: blur(10px);
+    .card {
+        background: rgba(20, 20, 30, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 0 25px rgba(0, 195, 255, 0.2);
+        padding: 25px;
+        width: 380px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 5px;
+        color: #ccc;
     }
 
     input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0 20px 0;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: none;
+        border-radius: 10px;
+        background: #111;
+        color: #fff;
+        font-size: 14px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
+    input:focus {
+        outline: 2px solid #00c3ff;
     }
 
-    th, td {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 10px;
-      text-align: left;
+    button {
+        width: 100%;
+        background: linear-gradient(90deg, #00c3ff, #0078ff);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
     }
 
-    th { color: #ffd700; }
-
-    td.price {
-      color: #ffd700;
-      font-weight: bold;
-      text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+    button:hover {
+        background: linear-gradient(90deg, #0078ff, #00c3ff);
     }
 
-    .hidden { display: none; }
-
-    .footer {
-      margin-top: 30px;
-      font-size: 14px;
-      color: #bbb;
+    .result-box {
+        margin-top: 15px;
+        background: rgba(0, 0, 0, 0.3);
+        padding: 12px;
+        border-radius: 10px;
     }
 
-    /* 🛒 Ícone do carrinho */
-    #carrinhoIcone {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      font-size: 30px;
-      background: linear-gradient(90deg, #a47cff, #ffd700);
-      color: #000;
-      border-radius: 50%;
-      width: 60px;
-      height: 60px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-      z-index: 999;
-      transition: transform 0.3s;
+    .result-box p {
+        margin: 8px 0;
+        font-size: 15px;
     }
 
-    #carrinhoIcone:hover { transform: scale(1.1); }
-
-    /* Painel do carrinho */
-    #carrinhoContainer {
-      position: fixed;
-      bottom: 0;
-      right: 0;
-      background: rgba(20, 20, 20, 0.95);
-      width: 320px;
-      max-height: 75%;
-      border-top-left-radius: 20px;
-      box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-      transform: translateY(100%);
-      transition: transform 0.4s ease;
-      overflow-y: auto;
-      padding: 20px;
-      z-index: 1000;
+    .highlight {
+        color: #00ffea;
+        font-weight: bold;
     }
-
-    #carrinhoContainer.aberto { transform: translateY(0); }
-
-    .carrinho-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      padding-bottom: 8px;
-    }
-
-    .carrinho-item span { font-size: 14px; }
-
-    .qtd-btn {
-      background: #ffd700;
-      border: none;
-      border-radius: 6px;
-      padding: 2px 8px;
-      cursor: pointer;
-      font-weight: bold;
-      color: #000;
-    }
-
-    .remove-btn {
-      background: #ff4747;
-      border: none;
-      border-radius: 6px;
-      padding: 4px 8px;
-      cursor: pointer;
-      color: #fff;
-      font-size: 12px;
-    }
-
-    .fechar-btn, .finalizar-btn {
-      width: 100%;
-      border: none;
-      padding: 10px;
-      border-radius: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .fechar-btn {
-      background: linear-gradient(90deg, #a47cff, #ffd700);
-      color: #000;
-    }
-
-    .finalizar-btn {
-      background: linear-gradient(90deg, #25D366, #128C7E);
-      color: #fff;
-    }
-
-    #vendedor-info {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 10px;
-      border-radius: 10px;
-      margin-bottom: 15px;
-      font-size: 15px;
-    }
-  </style>
+</style>
 </head>
 <body>
+    <h1>💰 Calculadora de Lucro — Gamer Edition</h1>
+    <div class="container">
+        <div class="card">
+            <label>Preço de venda (R$)</label>
+            <input type="number" id="preco" value="0.00" step="0.01">
 
-  <div class="login-container" id="loginPopup">
-    <h1>LevelUp Store 💎</h1>
-    <p>Entre com seu nome e código de vendedor para acessar o painel.</p>
-    <input type="text" id="nomeVendedor" placeholder="Digite seu nome">
-    <input type="password" id="codigo" placeholder="Digite seu código">
-    <button class="btn" id="entrar">Entrar</button>
-    <p class="footer">Acesso exclusivo para vendedores autorizados.</p>
-  </div>
+            <label>Custo de compra (R$)</label>
+            <input type="number" id="custo" value="0.00" step="0.01">
 
-  <div class="painel-container hidden" id="painel">
-    <div id="vendedor-info"></div>
+            <label>Taxa da plataforma (%)</label>
+            <input type="number" id="taxa" value="16" step="0.01">
 
-    <h2>📦 Painel de Fornecedor</h2>
+            <label>Outras taxas (R$ por venda)</label>
+            <input type="number" id="outras" value="0.00" step="0.01">
 
-    <h3 style="color:#ffd700;">Contas Fake Avakin</h3>
-    <table>
-      <tr><th>Produto</th><th>Preço</th><th>Ação</th></tr>
-      <tr><td>Conta Fake 20K</td><td class="price">R$ 3,99</td><td><button class="btn" onclick="adicionarCarrinho('Conta Fake 20K', 3.99)">Adicionar</button></td></tr>
-      <tr><td>Conta Fake 25K</td><td class="price">R$ 4,99</td><td><button class="btn" onclick="adicionarCarrinho('Conta Fake 25K', 4.99)">Adicionar</button></td></tr>
-    </table>
+            <label>Quantidade de vendas</label>
+            <input type="number" id="quantidade" value="1">
 
-    <h3 style="color:#ffd700;margin-top:30px;">Likes e Views Avakin Life</h3>
-    <table>
-      <tr><th>Pacote</th><th>Preço</th><th>Ação</th></tr>
-      <tr><td>1K Likes + Views</td><td class="price">R$ 5,35</td><td><button class="btn" onclick="adicionarCarrinho('1K Likes + Views', 5.35)">Adicionar</button></td></tr>
-      <tr><td>5K Likes + Views</td><td class="price">R$ 14,99</td><td><button class="btn" onclick="adicionarCarrinho('5K Likes + Views', 14.99)">Adicionar</button></td></tr>
-      <tr><td>10K Likes + Views</td><td class="price">R$ 24,50</td><td><button class="btn" onclick="adicionarCarrinho('10K Likes + Views', 24.50)">Adicionar</button></td></tr>
-      <tr><td>25K Likes + Views</td><td class="price">R$ 46,99</td><td><button class="btn" onclick="adicionarCarrinho('25K Likes + Views', 46.99)">Adicionar</button></td></tr>
-    </table>
+            <label>Arredondar casas</label>
+            <input type="number" id="casas" value="2">
 
-    <div style="text-align:center;margin-top:20px;">
-      <button class="btn" onclick="logout()">Sair</button>
+            <label>% para uso pessoal</label>
+            <input type="number" id="percentualPessoal" value="40">
+
+            <button onclick="calcular()">Calcular</button>
+        </div>
+
+        <div class="card">
+            <h2 style="text-align:center; color:#00ffea;">Resultados</h2>
+            <div class="result-box">
+                <p>Lucro Bruto: <span id="lucroBruto" class="highlight">R$ 0,00</span></p>
+                <p>Taxa Plataforma: <span id="taxaPlataforma" class="highlight">R$ 
+
+0,00</span></p>
+                <p>Lucro Líquido: <span id="lucroLiquido" class="highlight">R$ 
+
+0,00</span></p>
+                <p>Margem Líquida: <span id="margem" class="highlight">0%</span></p>
+                <p>Lucro Total: <span id="lucroTotal" class="highlight">R$ 0,00</span></p>
+                <hr style="border-color:#222;">
+                <p>💵 Uso Pessoal: <span id="usoPessoal" class="highlight">R$ 
+
+0,00</span></p>
+                <p>🔁 Reposição: <span id="reposicao" class="highlight">R$ 0,00</span></p>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- 🛒 Ícone e Painel do Carrinho -->
-  <div id="carrinhoIcone">🛒</div>
+<script>
+function calcular() {
+    const preco = parseFloat(document.getElementById("preco").value) || 0;
+    const custo = parseFloat(document.getElementById("custo").value) || 0;
+    const taxa = parseFloat(document.getElementById("taxa").value) || 0;
+    const outras = parseFloat(document.getElementById("outras").value) || 0;
+    const quantidade = parseFloat(document.getElementById("quantidade").value) || 1;
+    const casas = parseInt(document.getElementById("casas").value) || 2;
+    const percentualPessoal = parseFloat(document.getElementById
 
-  <div id="carrinhoContainer">
-    <h3 style="color:#ffd700;">🛍️ Seu Carrinho</h3>
-    <div id="itensCarrinho"></div>
-    <p id="totalCarrinho" style="margin-top:10px;font-weight:bold;">Total: R$ 0,00</p>
-    <button class="finalizar-btn" onclick="finalizarPedido()">Finalizar Pedido no WhatsApp</button>
-    <button class="fechar-btn" onclick="fecharCarrinho()">Fechar Carrinho</button>
-  </div>
+("percentualPessoal").value) || 0;
 
-  <script>
-    const codigosLiberados = ["a_@F_LnYg5_FofZ", "b_@T_XkJ7_Mt_Lux"];
-    const loginPopup = document.getElementById("loginPopup");
-    const painel = document.getElementById("painel");
-    const entrarBtn = document.getElementById("entrar");
-    const codigoInput = document.getElementById("codigo");
-    const nomeInput = document.getElementById("nomeVendedor");
-    const vendedorInfo = document.getElementById("vendedor-info");
-    const carrinhoIcone = document.getElementById("carrinhoIcone");
+    const taxaPlataforma = (preco * taxa) / 100;
+    const lucroBruto = preco - custo;
+    const lucroLiquido = preco - custo - taxaPlataforma - outras;
+    const margem = (lucroLiquido / preco) * 100;
+    const lucroTotal = lucroLiquido * quantidade;
 
-    let vendedorAtual = "";
-    let codigoAtual = "";
+    const usoPessoal = (lucroTotal * percentualPessoal) / 100;
+    const reposicao = custo * quantidade;
 
-    entrarBtn.addEventListener("click", () => {
-      const codigo = codigoInput.value.trim();
-      const nome = nomeInput.value.trim();
+    // Atualizar resultados
+    document.getElementById("lucroBruto").innerText = "R$ " + lucroBruto.toFixed(casas);
+    document.getElementById("taxaPlataforma").innerText = "R$ " + taxaPlataforma.toFixed
 
-      if (codigosLiberados.includes(codigo) && nome !== "") {
-        vendedorAtual = nome;
-        codigoAtual = codigo;
-        loginPopup.classList.add("hidden");
-        painel.classList.remove("hidden");
-        carrinhoIcone.style.display = "flex";
-        vendedorInfo.innerHTML = `<b>Vendedor:</b> ${vendedorAtual}<br><b>Código:</b> ${codigoAtual}`;
-      } else {
-        alert("Código inválido ou nome em branco.");
-      }
-    });
+(casas);
+    document.getElementById("lucroLiquido").innerText = "R$ " + lucroLiquido.toFixed
 
-    function logout() {
-      painel.classList.add("hidden");
-      loginPopup.classList.remove("hidden");
-      codigoInput.value = "";
-      nomeInput.value = "";
-      carrinhoIcone.style.display = "none";
+(casas);
+    document.getElementById("margem").innerText = margem.toFixed(2) + "%";
+    document.getElementById("lucroTotal").innerText = "R$ " + lucroTotal.toFixed(casas);
+    document.getElementById("usoPessoal").innerText = "R$ " + usoPessoal.toFixed(casas);
+    document.getElementById("reposicao").innerText = "R$ " + reposicao.toFixed(casas);
+
+    // Mostrar alerta só se houver lucro > 0 e uso pessoal + reposição ultrapassarem o 
+
+total
+    if (lucroTotal > 0 && (usoPessoal + reposicao) > lucroTotal) {
+        Swal.fire({
+            icon: 'warning',
+            title: '⚠️ Atenção!',
+            text: 'Se você tirar tudo pra uso pessoal, não vai sobrar para recomprar 
+
+produtos!',
+            confirmButtonColor: '#00c3ff',
+            background: '#101020',
+            color: '#fff',
+        });
     }
-
-    // 🛒 Carrinho
-    const carrinho = [];
-    const carrinhoContainer = document.getElementById("carrinhoContainer");
-    const itensCarrinhoDiv = document.getElementById("itensCarrinho");
-    const totalCarrinho = document.getElementById("totalCarrinho");
-
-    carrinhoIcone.addEventListener("click", () => {
-      carrinhoContainer.classList.toggle("aberto");
-      atualizarCarrinho();
-    });
-
-    function adicionarCarrinho(nome, preco) {
-      const item = carrinho.find(i => i.nome === nome);
-      if (item) {
-        item.qtd++;
-      } else {
-        carrinho.push({ nome, preco, qtd: 1 });
-      }
-      atualizarCarrinho();
-    }
-
-    function alterarQtd(nome, delta) {
-      const item = carrinho.find(i => i.nome === nome);
-      if (!item) return;
-      item.qtd += delta;
-      if (item.qtd <= 0) removerItem(nome);
-      atualizarCarrinho();
-    }
-
-    function removerItem(nome) {
-      const index = carrinho.findIndex(i => i.nome === nome);
-      if (index > -1) carrinho.splice(index, 1);
-      atualizarCarrinho();
-    }
-
-    function atualizarCarrinho() {
-      itensCarrinhoDiv.innerHTML = "";
-      let total = 0;
-      carrinho.forEach(item => {
-        total += item.preco * item.qtd;
-        const div = document.createElement("div");
-        div.classList.add("carrinho-item");
-        div.innerHTML = `
-          <span>${item.nome}</span>
-          <div>
-            <button class="qtd-btn" onclick="alterarQtd('${item.nome}', -1)">-</button>
-            <span>${item.qtd}</span>
-            <button class="qtd-btn" onclick="alterarQtd('${item.nome}', 1)">+</button>
-            <button class="remove-btn" onclick="removerItem('${item.nome}')">x</button>
-          </div>
-        `;
-        itensCarrinhoDiv.appendChild(div);
-      });
-      totalCarrinho.textContent = `Total: R$ ${total.toFixed(2)}`;
-    }
-
-    function fecharCarrinho() {
-      carrinhoContainer.classList.remove("aberto");
-    }
-
-    function finalizarPedido() {
-      if (carrinho.length === 0) {
-        alert("Seu carrinho está vazio!");
-        return;
-      }
-      let mensagem = `📦 *Novo Pedido - LevelUp Store*\n\n👤 *Vendedor:* ${vendedorAtual}\n🔑 *Código:* ${codigoAtual}\n\n`;
-      let total = 0;
-      carrinho.forEach(item => {
-        mensagem += `• ${item.nome} — ${item.qtd}x (R$ ${item.preco.toFixed(2)})\n`;
-        total += item.preco * item.qtd;
-      });
-      mensagem += `\n💰 *Total: R$ ${total.toFixed(2)}*\n\nPor favor, confirme meu pedido.`;
-      
-      const numeroWhats = "556296094975"; // ← coloque aqui o número do WhatsApp com DDI e DDD
-      const url = `https://wa.me/${numeroWhats}?text=${encodeURIComponent(mensagem)}`;
-      window.open(url, "_blank");
-    }
-  </script>
+}
+</script>
 </body>
 </html>
